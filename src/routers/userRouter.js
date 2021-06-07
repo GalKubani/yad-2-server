@@ -2,7 +2,7 @@ const express = require('express');
 const router = new express.Router()
 const auth = require('../middleware/auth')
 
-router.post('/users', async (req, res) => {
+router.post('/users/add', async (req, res) => {
 
     try {
         const user = new User(req.body)

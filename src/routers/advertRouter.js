@@ -48,9 +48,9 @@ router.patch('/adverts/edit', auth, async (req, res) => {
 })
 router.post('/adverts/new-picture', auth, upload.single('assetPictures'), async (req, res) => {
     const buffer = await sharp(req.image.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
-    // will nn to find advert from data sent, then add buffer to its picture array as long as it doesnt exceed 10
+    let currentAdvert = await Advert.findById({ _id: req.body._id })
+    currentAdvert.assetPictures.push(buffer)
     // will nn to add option to remove image or video later on
-    req.user.avatar = buffer;
     await req.user.save();
     res.send()
 }, (error, req, res, next) => {
