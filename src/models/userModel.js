@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 const userSchema = new mongoose.Schema({
-    name: { type: String, required: true, trim: true },
+    name: { type: String, trim: true },
     email: {
         type: String, required: true, trim: true, lowercase: true, unique: true,
         validate(value) {
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String, required: true, trim: true,
         validate(value) {
-            if (value.length < 7) {
+            if (value.length < 6) {
                 throw new Error("password too short")
             }
         }

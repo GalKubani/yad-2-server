@@ -2,9 +2,9 @@ const express = require('express')
 const cors = require('cors')
 const port = process.env.PORT
 const app = express()
-
-const addressRouter = require('./src/routers/addressRouter')
-const userRouter = require('./src/routers/userRouter')
+require('./db/mongoose')
+const addressRouter = require('./routers/addressRouter')
+const userRouter = require('./routers/userRouter')
 app.use(cors())
 app.use(express.json())
 app.use(addressRouter)

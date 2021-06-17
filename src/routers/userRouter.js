@@ -1,15 +1,19 @@
 const express = require('express');
 const router = new express.Router()
-const auth = require('../middleware/auth')
+const auth = require('../middleware/auth');
+const User = require('../models/userModel');
+const bcrypt = require('bcryptjs')
 
 router.post('/users/add', async (req, res) => {
 
     try {
+        req.body.name = req.body.email[0];
         const user = new User(req.body)
         await user.save()
         const token = await user.generateAuthToken()
         res.status(201).send({ user, token })
     } catch (error) {
+        console.log(error)
         res.status(400).send(error)
     }
 })
