@@ -1,5 +1,5 @@
 const express = require('express');
-const { searchCitySheet, searchStreetSheet } = require('../utils/worksheetRequests');
+const { searchCitySheet, searchStreetSheet, findCityStreets } = require('../utils/worksheetRequests');
 const router = new express.Router()
 
 
@@ -11,7 +11,7 @@ router.get('/search-city', async (req, res) => {
 
 router.get('/get-city-streets', async (req, res) => {
     const searchValue = req.query.searchValue
-    let { streetNames, neighborhoods } = searchStreetSheet(searchValue)
+    let { streetNames, neighborhoods } = findCityStreets(searchValue)
     res.send({ streetNames, neighborhoods })
 })
 

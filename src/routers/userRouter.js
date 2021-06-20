@@ -66,7 +66,8 @@ router.delete('/users/me', auth, async (req, res) => {
 })
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['name', 'email', 'password']
+    const allowedUpdates = ['name', 'email', 'password', 'mainPhone', 'secondaryPhone',
+        'city', 'neighborhood', 'street', 'houseNumber', 'lastName', 'dateOfBirth',]
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
     if (!isValidOperation) {
         return res.status(400).send({ error: "Invalid updates!" })

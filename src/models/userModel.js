@@ -13,6 +13,14 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
+    mainPhone: { type: Number },
+    secondaryPhone: { type: Number },
+    city: { type: String },
+    neighborhood: { type: String },
+    street: { type: String },
+    houseNumber: { type: Number },
+    lastName: { type: String, trim: true },
+    dateOfBirth: { type: Date },
     password: {
         type: String, required: true, trim: true,
         validate(value) {

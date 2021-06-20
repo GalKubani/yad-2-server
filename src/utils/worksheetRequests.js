@@ -14,7 +14,31 @@ const searchCitySheet = (searchValue) => {
     })
     return cityNames
 }
-
+const findCityStreets = (searchValue) => {
+    let streetNames = []
+    for (let cell in streetWorkSheet) {
+        const cellAsString = cell.toString()
+        try {
+            if (streetWorkSheet[cellAsString].שם_ישוב.trim().includes(searchValue) && streetWorkSheet[cellAsString].שם_רחוב.trim().length < 24) {
+                streetNames.push(streetWorkSheet[cellAsString].שם_רחוב.trim())
+            }
+        } catch (err) {
+            continue
+        }
+    }
+    streetNames.sort(function (a, b) {
+        if (a.indexOf(searchValue) <= b.indexOf(searchValue)) { return -1 }
+        else return 1
+    })
+    let neighborhoods = []
+    for (let i = 0; i < streetNames.length; i++) {
+        if (streetNames[i].includes("שכ ")) {
+            let neighborhoodName = streetNames.splice(i, 1)[0]
+            neighborhoods.push(neighborhoodName)
+        }
+    }
+    return { streetNames, neighborhoods }
+}
 const searchStreetSheet = (searchValue) => {
     let streetNames = []
     for (let cell in streetWorkSheet) {
@@ -41,4 +65,4 @@ const searchStreetSheet = (searchValue) => {
     }
     return { streetNames, neighborhoods }
 }
-module.exports = { searchCitySheet, searchStreetSheet }
+module.exports = { searchCitySheet, searchStreetSheet, findCityStreets }
