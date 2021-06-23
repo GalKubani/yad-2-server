@@ -26,10 +26,6 @@ const findCityStreets = (searchValue) => {
             continue
         }
     }
-    streetNames.sort(function (a, b) {
-        if (a.indexOf(searchValue) <= b.indexOf(searchValue)) { return -1 }
-        else return 1
-    })
     let neighborhoods = []
     for (let i = 0; i < streetNames.length; i++) {
         if (streetNames[i].includes("שכ ")) {

@@ -5,6 +5,7 @@ const advertSchema = new mongoose.Schema({
     assetCondition: { type: String, required: true },
     assetCity: { type: String, required: true },
     assetStreet: { type: String, required: true },
+    assetNeighborhood: { type: String, },
     assetHouseNumber: { type: Number },
     assetFloorNumber: { type: Number },
     assetEntrenceNumber: { type: Number },
