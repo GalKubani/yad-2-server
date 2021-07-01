@@ -10,8 +10,6 @@ const advertSchema = new mongoose.Schema({
     assetFloorNumber: { type: Number },
     assetEntrenceNumber: { type: Number },
     assetBuildingTotalFloors: { type: Number },
-    // might nn to add how many floors are total in case of an apartment
-    // might need to add neighborhood and region, will get back to this
     assetTotalRooms: { type: Number, required: true },
     assetTotalParking: { type: Number, required: true },
     assetTotalPorchs: { type: Number, required: true },
