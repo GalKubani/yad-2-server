@@ -15,6 +15,15 @@ router.get('/adverts/get-user', auth, async (req, res) => {
         res.status(400).send(err)
     }
 })
+router.get('/adverts/get-all', async (req, res) => {
+    try {
+        const allAdverts = await Advert.find({ isAdvertActive: true })
+        res.send(allAdverts)
+    } catch (err) {
+        console.log(err)
+        res.status(400).send(err)
+    }
+})
 router.post('/adverts/new', auth, async (req, res) => {
 
     try {
@@ -38,9 +47,9 @@ router.delete('/adverts/delete', auth, async (req, res) => {
 })
 router.patch('/adverts/edit', auth, async (req, res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['assetBuildingTotalFloors', 'assetCondition',
-        'assetTotalParking', 'assetTotalPorchs', 'assetDetails', 'assetCharecteristics',
-        'assetSize', 'assetPrice', 'dateOfEntry', 'isAdvertActive', 'contacts']
+    const allowedUpdates = ['assetCondition', 'assetTotalParking', 'assetTotalPorchs',
+        'assetDetails', 'assetCharecteristics', 'assetBuiltSize', 'assetPrice',
+        'dateOfEntry', 'isAdvertActive', 'contacts']
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
     if (!isValidOperation) {
         return res.status(400).send({ error: "Invalid updates!" })
@@ -77,14 +86,30 @@ const uploadVideo = multer({
         cb(undefined, true)
     }
 })
+router.post('/adverts/update-pictures', auth, async (req, res) => {
+    try {
+        let currentAdvert = await Advert.findById({ _id: req.query.id })
+        let currentPics = []
+        for (let i = 0; i < req.body.length; i++) {
+            currentPics.push(currentAdvert.assetPictures[i])
+        }
+        currentAdvert.assetPictures = [...currentPics]
+        await currentAdvert.save();
+        res.send()
+    } catch (err) {
+        console.log(err)
+        res.status(400).send({ error: err.message })
+    }
+})
 router.post('/adverts/add-pictures', auth, uploadPics.array('assetPictures'), async (req, res) => {
     try {
         let bufferedPics = []
         for (let picture of req.files) {
-            let pic = await sharp(picture.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
+            let pic = await sharp(picture.buffer, { failOnError: false }).resize({ width: 250, height: 250 }).png().toBuffer()
             bufferedPics.push(pic)
         }
         let currentAdvert = await Advert.findById({ _id: req.query.id })
+
         currentAdvert.assetPictures = [...currentAdvert.assetPictures, ...bufferedPics]
         await currentAdvert.save();
         res.send()
