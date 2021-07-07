@@ -1,10 +1,8 @@
 const express = require('express');
 const router = new express.Router()
 const auth = require('../middleware/auth')
-const sharp = require('sharp')
-const multer = require('multer')
 const Advert = require('../models/advertModel');
-
+const { uploadFilesToS3, deleteFileFromS3 } = require('../middleware/s3-handles')
 
 router.get('/adverts/get-user', auth, async (req, res) => {
     try {
@@ -49,6 +47,7 @@ router.patch('/adverts/edit', auth, async (req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ['assetCondition', 'assetTotalParking', 'assetTotalPorchs',
         'assetDetails', 'assetCharecteristics', 'assetBuiltSize', 'assetPrice',
+        'assetPictures', 'assetVideo',
         'dateOfEntry', 'isAdvertActive', 'contacts']
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
     if (!isValidOperation) {
@@ -63,68 +62,23 @@ router.patch('/adverts/edit', auth, async (req, res) => {
         res.status(400).send(error)
     }
 })
-const uploadPics = multer({
-    limits: {
-        fileSize: 10000000
-    },
-    fileFilter(req, file, cb) {
-        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
-            return cb(new Error('Please upload an image'))
-        }
-        cb(undefined, true)
-    }
+router.delete('/adverts/delete-picture', deleteFileFromS3, async (req, res) => {
+    res.send()
 })
-const uploadVideo = multer({
-    limits: {
-        fileSize: 30000000
-    },
-    fileFilter(req, file, cb) {
-        console.log(file)
-        if (!file.originalname.match(/\.(mp4|avi)$/)) {
-            return cb(new Error('Please upload a video'))
-        }
-        cb(undefined, true)
-    }
-})
-router.post('/adverts/update-pictures', auth, async (req, res) => {
-    try {
-        let currentAdvert = await Advert.findById({ _id: req.query.id })
-        let currentPics = []
-        for (let i = 0; i < req.body.length; i++) {
-            currentPics.push(currentAdvert.assetPictures[i])
-        }
-        currentAdvert.assetPictures = [...currentPics]
-        await currentAdvert.save();
-        res.send()
-    } catch (err) {
-        console.log(err)
-        res.status(400).send({ error: err.message })
-    }
-})
-router.post('/adverts/add-pictures', auth, uploadPics.array('assetPictures'), async (req, res) => {
-    try {
-        let bufferedPics = []
-        for (let picture of req.files) {
-            let pic = await sharp(picture.buffer, { failOnError: false }).resize({ width: 250, height: 250 }).png().toBuffer()
-            bufferedPics.push(pic)
-        }
-        let currentAdvert = await Advert.findById({ _id: req.query.id })
 
-        currentAdvert.assetPictures = [...currentAdvert.assetPictures, ...bufferedPics]
-        await currentAdvert.save();
-        res.send()
-    } catch (err) {
-        console.log(err)
-        res.status(400).send({ error: err.message })
+router.post('/adverts/add-pictures', auth, uploadFilesToS3, async (req, res) => {
+    if (!req.files) {
+        res.send([])
     }
-})
-router.post('/adverts/add-video', auth, uploadVideo.single('assetVideo'), async (req, res) => {
     try {
-        let videoBuffer = req.file.buffer
+        let imgsrc = []
+        for (let pic of req.files) {
+            imgsrc.push(pic.location)
+        }
         let currentAdvert = await Advert.findById({ _id: req.query.id })
-        currentAdvert.assetVideo = videoBuffer;
+        currentAdvert.assetPictures = [...currentAdvert.assetPictures, ...imgsrc]
         await currentAdvert.save();
-        res.send()
+        res.send(imgsrc)
     } catch (err) {
         console.log(err)
         res.status(400).send({ error: err.message })

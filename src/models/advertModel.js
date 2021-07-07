@@ -22,9 +22,9 @@ const advertSchema = new mongoose.Schema({
     assetPrice: { type: Number },
     dateOfEntry: { type: String, required: true },
     assetPictures: [{
-        type: Buffer
+        type: String
     }],
-    assetVideo: { type: Buffer },
+    assetVideo: { type: String },
     contacts: [{
         contactName: { type: String, required: true },
         contactNumber: { type: Number, required: true },
