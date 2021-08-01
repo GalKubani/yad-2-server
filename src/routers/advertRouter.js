@@ -23,7 +23,6 @@ router.get('/adverts/get-all', async (req, res) => {
     }
 })
 router.post('/adverts/new', auth, async (req, res) => {
-
     try {
         req.body.user = req.user
         const advert = new Advert(req.body)
@@ -65,7 +64,6 @@ router.patch('/adverts/edit', auth, async (req, res) => {
 router.delete('/adverts/delete-picture', deleteFileFromS3, async (req, res) => {
     res.send()
 })
-
 router.post('/adverts/add-pictures', auth, uploadFilesToS3, async (req, res) => {
     if (!req.files) {
         res.send([])
@@ -84,6 +82,5 @@ router.post('/adverts/add-pictures', auth, uploadFilesToS3, async (req, res) => 
         res.status(400).send({ error: err.message })
     }
 })
-
 
 module.exports = router;
