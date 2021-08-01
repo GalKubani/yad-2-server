@@ -4,7 +4,7 @@ const sql = require('mssql');
 const sqlAuth = require('../middleware/sqlauth');
 const jwt = require('jsonwebtoken');
 const { parseToTokenArray, parseArrayToString, parseAdvert } = require('../utils/parseData');
-const { uploadFilesToS3, deleteFileFromS3 } = require('../middleware/s3-handles')
+const { uploadFilesToS3 } = require('../middleware/s3-handles')
 
 let config = {
     user: 'sa',
@@ -17,6 +17,123 @@ const getConnection = async () => {
     let { err } = await sql.connect(config)
     return err
 }
+const initDB = async () => {
+    let error = await getConnection()
+    if (error) { throw new Error("DB connection error") }
+    let request = new sql.Request()
+    request.query(`CREATE TABLE Users(
+        ID int IDENTITY(1,1) NOT NULL,
+        firstName nvarchar(255) NULL,
+        lastName nvarchar(255) NULL,
+        city nvarchar(255) NULL,
+        neighborhood nvarchar(255) NULL,
+        street nvarchar(255) NULL,
+        houseNumber int NULL,
+        mainPhone nvarchar(25) NULL,
+        secondaryPhone nvarchar(25) NULL,
+        dateOfBirth nvarchar(100) NULL,
+        email nvarchar(255) NOT NULL,
+        password nvarchar(25) NOT NULL,
+        tokens nvarchar(4000) NULL,
+        CONSTRAINT pk_users PRIMARY KEY (ID),
+        CONSTRAINT uc_email UNIQUE (email) 
+     )`, (error) => {
+        if (error) {
+            console.log("Connecting to existing db")
+            return
+        }
+        request.query(`create TABLE Adverts(
+            ID int IDENTITY(1,1) NOT NULL,
+            assetType nvarchar(255) NOT NULL,
+            assetCondition nvarchar(255) NOT NULL,
+            assetCity nvarchar(255) NOT NULL,
+            assetStreet nvarchar(255) NOT NULL,
+            assetNeighborhood nvarchar(255) NULL,
+            assetHouseNumber int NULL,
+            assetFloorNumber int NULL,
+            assetEntrenceNumber int NULL,
+            assetBuildingTotalFloors int NULL,
+            assetTotalRooms float NULL,
+            assetTotalParking int NOT NULL,
+            assetTotalPorchs int NOT NULL,
+            assetDetails nvarchar(255) DEFAULT '',
+            assetCharecteristics nvarchar(255) NULL,
+            assetSize int NOT NULL,
+            assetBuiltSize int NULL,
+            assetPrice int NULL,
+            dateOfEntry nvarchar(255) NOT NULL,
+            assetPictures nvarchar(1000) NULL,
+            assetVideo nvarchar(255) NULL,
+            mainContact nvarchar(255) NOT NULL,
+            mainContactPhone int NOT NULL,
+            secondContact nvarchar(255) NULL,
+            secondContactPhone int NULL,
+            isAdvertActive bit NOT NULL,
+            userId int NOT NULL,
+            updated_at datetime DEFAULT GETDATE(),
+            CONSTRAINT pk_adverts PRIMARY KEY (ID),
+            CONSTRAINT FK_advert_userID FOREIGN KEY (userId)
+            REFERENCES Users(ID),
+            CONSTRAINT CHK_numbers CHECK (([assetTotalParking]<=(3) AND [assetTotalParking]>=(0) AND [assetTotalPorchs]<=(3) AND [assetTotalPorchs]>=(0) AND [assetTotalRooms]<=(12) AND [assetTotalRooms]>=(0)))
+            )`, (err) => {
+            if (err) { console.log(err) }
+            else {
+                request.query(`CREATE trigger tr_updated_at
+                on Adverts after Update as update Adverts
+                    set updated_at= getDate()
+                    from inserted i
+                    where Adverts.ID=i.ID`, (e) => {
+                    if (e) { console.log(e) }
+                })
+                request.query(`create proc createAdvert @assetType nvarchar(30), @assetCondition nvarchar(60), @assetCity nvarchar(60), @assetStreet nvarchar(60), @assetNeighborhood nvarchar(60), 
+                @assetHouseNumber int,  @assetTotalRooms float, @assetTotalParking int, @assetTotalPorchs int, @assetDetails nvarchar(500),
+                @assetCharecteristics nvarchar(500), @assetSize int, @assetBuiltSize int, @assetPrice int, @dateOfEntry nvarchar(255),
+                @mainContact nvarchar(60), @mainContactPhone int, @secondContact nvarchar(60), @secondContactPhone int, @isAdvertActive bit, @userId int
+                as begin
+                insert into Adverts (assetType,assetCondition,assetCity,assetStreet,assetNeighborhood,assetHouseNumber,assetTotalRooms,
+                assetTotalParking,assetTotalPorchs,assetDetails,assetCharecteristics,assetSize,assetBuiltSize,assetPrice,dateOfEntry,mainContact,mainContactPhone,
+                secondContact,secondContactPhone,isAdvertActive,userId) 
+                values(@assetType , @assetCondition , @assetCity, @assetStreet, @assetNeighborhood, 
+                @assetHouseNumber,  @assetTotalRooms, @assetTotalParking, @assetTotalPorchs, @assetDetails,
+                @assetCharecteristics, @assetSize, @assetBuiltSize, @assetPrice, @dateOfEntry,
+                @mainContact, @mainContactPhone, @secondContact, @secondContactPhone, @isAdvertActive, @userId)
+                begin select * from Adverts where assetStreet=@assetStreet AND assetCity= @assetCity AND assetSize=@assetSize end end`, (e) => {
+                    if (e) { console.log(e) }
+                })
+                request.query(`create proc editAdvert @assetCondition nvarchar(255), @assetTotalParking int,
+                @assetTotalPorchs int, @assetDetails nvarchar(500),@assetCharecteristics nvarchar(255),
+                @assetBuiltSize int,@assetPrice int, @dateOfEntry nvarchar(255),@mainContact nvarchar(255),
+                @mainContactPhone int,@isAdvertActive bit,@ID int as begin
+                update Adverts set assetCondition=@assetCondition,assetTotalParking=@assetTotalParking,
+                assetTotalPorchs=@assetTotalPorchs, assetDetails=@assetDetails, assetCharecteristics=@assetCharecteristics,
+                assetBuiltSize=@assetBuiltSize, assetPrice=@assetPrice, dateOfEntry=@dateOfEntry,mainContact=@mainContact,
+                mainContactPhone=@mainContactPhone, isAdvertActive=@isAdvertActive
+                where @ID=ID begin select * from Users where @ID=ID end end`, (e) => {
+                    if (e) { console.log(e) }
+                })
+            }
+        })
+        request.query(`CREATE proc addAUser @email nvarchar(255), @password nvarchar(15)
+                as begin insert into Users (email,password)
+                Values (@email,@password)
+                select * from Users where @email=email
+                end`, (err) => { if (err) { console.log(err) } })
+        request.query(`CREATE proc editUser @email nvarchar(255), @password nvarchar(15),
+                @firstName nvarchar(20),@lastName nvarchar(20),@city nvarchar(30),
+                @neighborhood nvarchar(30),@street nvarchar(30),@houseNumber int,
+                @mainPhone int, @secondaryPhone int, @dateOfBirth nvarchar(100)
+                as begin
+                update Users set password=@password, firstName=@firstName, lastName=@lastName, city=@city,
+                neighborhood=@neighborhood, street=@street, houseNumber=@houseNumber,
+                mainPhone=@mainPhone, secondaryPhone=@secondaryPhone, dateOfBirth=@dateOfBirth
+                where @email=email begin select * from Users where @email=email end end
+                `, (err) => { if (err) { console.log(err) } })
+        request.query(`create proc userLogin @id int, @token nvarchar(4000)  
+                as begin update Users   
+                set tokens = tokens + ','+@token where ID=@id end`, (err) => { if (err) { console.log(err) } })
+    })
+}
+initDB()
 router.post('/sql/users/add', async (req, res) => {
     try {
         let error = await getConnection()
